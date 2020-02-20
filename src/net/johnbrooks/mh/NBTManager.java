@@ -1,11 +1,11 @@
 package net.johnbrooks.mh;
 
 import net.johnbrooks.mh.items.CaptureEgg;
-import net.minecraft.server.v1_14_R1.*;
+import net.minecraft.server.v1_15_R1.*;
 import org.bukkit.*;
 import org.bukkit.Material;
 import org.bukkit.attribute.Attribute;
-import org.bukkit.craftbukkit.v1_14_R1.inventory.CraftItemStack;
+import org.bukkit.craftbukkit.v1_15_R1.inventory.CraftItemStack;
 import org.bukkit.entity.*;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
@@ -24,7 +24,7 @@ public class NBTManager {
 
     public static boolean isSpawnEgg(ItemStack itemStack) {
         if (itemStack.getType().name().contains("SPAWN_EGG")) {
-            net.minecraft.server.v1_14_R1.ItemStack nmsStack = CraftItemStack.asNMSCopy(itemStack);
+            net.minecraft.server.v1_15_R1.ItemStack nmsStack = CraftItemStack.asNMSCopy(itemStack);
             if (nmsStack.hasTag()) {
                 NBTTagCompound compound = nmsStack.getTag();
                 NBTTagCompound entityDetails = compound.getCompound("tag");
@@ -40,7 +40,7 @@ public class NBTManager {
 
     public static LivingEntity spawnEntityFromNBTData(ItemStack spawnItem, Location target) {
         if (spawnItem != null) {
-            net.minecraft.server.v1_14_R1.ItemStack nmsStack = CraftItemStack.asNMSCopy(spawnItem);
+            net.minecraft.server.v1_15_R1.ItemStack nmsStack = CraftItemStack.asNMSCopy(spawnItem);
             if (nmsStack.hasTag()) {
                 NBTTagCompound compound = nmsStack.getTag();
                 NBTTagCompound entityDetails = compound.getCompound("tag");
@@ -172,7 +172,7 @@ public class NBTManager {
 
                 //5) Set the resulted item stack to its proper NBT tags.
                 ItemStack resultItemStack = new ItemStack(Material.valueOf(resultString[0]), Integer.parseInt(resultString[1]));
-                net.minecraft.server.v1_14_R1.ItemStack nmsStack = CraftItemStack.asNMSCopy(resultItemStack);
+                net.minecraft.server.v1_15_R1.ItemStack nmsStack = CraftItemStack.asNMSCopy(resultItemStack);
                 nmsStack.setTag(resultTags);
                 resultItemStack = CraftItemStack.asBukkitCopy(nmsStack);
 
@@ -185,7 +185,7 @@ public class NBTManager {
                     String[] ingredient = materialsAndAmount.getString(j).split("\\.");
                     NBTTagCompound tags = tagList.getCompound(j);
                     ItemStack itemStack = new ItemStack(Material.valueOf(ingredient[0]), Integer.parseInt(ingredient[1]));
-                    net.minecraft.server.v1_14_R1.ItemStack nmsIngredientStack = CraftItemStack.asNMSCopy(itemStack);
+                    net.minecraft.server.v1_15_R1.ItemStack nmsIngredientStack = CraftItemStack.asNMSCopy(itemStack);
                     nmsIngredientStack.setTag(tags);
                     itemStack = CraftItemStack.asBukkitCopy(nmsIngredientStack);
                     ingredients.add(itemStack);
@@ -232,7 +232,7 @@ public class NBTManager {
                 //3) Create item stack and attach NBT tag to it.
                 ItemStack itemStack = new ItemStack(Material.valueOf(materialName));
                 if (tag != new NBTTagCompound()) {
-                    net.minecraft.server.v1_14_R1.ItemStack nmsStack = CraftItemStack.asNMSCopy(itemStack);
+                    net.minecraft.server.v1_15_R1.ItemStack nmsStack = CraftItemStack.asNMSCopy(itemStack);
                     nmsStack.setTag(tag);
                     itemStack = CraftItemStack.asBukkitCopy(nmsStack);
                 }
@@ -272,7 +272,7 @@ public class NBTManager {
         itemMeta.setLore(createItemLore(livingEntity));
         itemStack.setItemMeta(itemMeta);
 
-        final net.minecraft.server.v1_14_R1.ItemStack nmsStack = CraftItemStack.asNMSCopy(itemStack);
+        final net.minecraft.server.v1_15_R1.ItemStack nmsStack = CraftItemStack.asNMSCopy(itemStack);
         final NBTTagCompound tagCompound = (nmsStack.hasTag() && nmsStack.getTag() != null) ? nmsStack.getTag() : new NBTTagCompound();
 
         //2) Gather capture data
@@ -334,37 +334,37 @@ public class NBTManager {
         final NBTTagList loreList = new NBTTagList();
 
         // Entity Type
-        loreList.add(new NBTTagString(ChatColor.AQUA + "Creature Type: " + ChatColor.YELLOW + livingEntity.getType().name()));
+        loreList.add(NBTTagString.a(ChatColor.AQUA + "Creature Type: " + ChatColor.YELLOW + livingEntity.getType().name()));
 
         // Entity Health
-        loreList.add(new NBTTagString(ChatColor.AQUA + "Health: " + ChatColor.YELLOW + getLoreHealth(livingEntity)));
+        loreList.add(NBTTagString.a(ChatColor.AQUA + "Health: " + ChatColor.YELLOW + getLoreHealth(livingEntity)));
 
         // Entity Age
         if (livingEntity instanceof Ageable) {
             final Ageable ageable = (Ageable) livingEntity;
             if (!ageable.isAdult())
-                loreList.add(new NBTTagString(ChatColor.AQUA + "Age: " + ChatColor.YELLOW + "Baby"));
+                loreList.add(NBTTagString.a(ChatColor.AQUA + "Age: " + ChatColor.YELLOW + "Baby"));
         }
 
         // Entity Tamed
         if (livingEntity instanceof Tameable) {
             final Tameable tameable = (Tameable) livingEntity;
-            loreList.add(new NBTTagString(ChatColor.AQUA + "Tamed: " + ChatColor.YELLOW + (tameable.isTamed() ? "Yes" : "No")));
+            loreList.add(NBTTagString.a(ChatColor.AQUA + "Tamed: " + ChatColor.YELLOW + (tameable.isTamed() ? "Yes" : "No")));
         }
 
         // Parrot Color
         if (livingEntity instanceof Parrot) {
             final Parrot parrot = (Parrot) livingEntity;
-            loreList.add(new NBTTagString(ChatColor.AQUA + "Color: " + ChatColor.YELLOW + parrot.getVariant().name()));
+            loreList.add(NBTTagString.a(ChatColor.AQUA + "Color: " + ChatColor.YELLOW + parrot.getVariant().name()));
         }
 
         // Active potion effects
         livingEntity.getActivePotionEffects().forEach(potionEffect -> {
             final int duration = potionEffect.getDuration();
             final String typeName = potionEffect.getType().getName().replace("_", " ").toLowerCase();
-            loreList.add(new NBTTagString(
-                    ChatColor.DARK_PURPLE + typeName.substring(0, 1).toUpperCase() + typeName.substring(1) +
-                            " for " + (duration / 20) + " seconds"));
+            loreList.add(NBTTagString.a(ChatColor.DARK_PURPLE + typeName.substring(0, 1).toUpperCase() 
+						+ typeName.substring(1) +
+						" for " + (duration / 20) + " seconds"));
         });
 
         return loreList;
@@ -392,11 +392,11 @@ public class NBTManager {
         NBTTagCompound entityDetails = compound.getCompound("tag");
         // General entity data
         if (livingEntity.getCustomName() != null)
-            entityDetails.set("custom name", new NBTTagString(livingEntity.getCustomName()));
-        entityDetails.set("entity type", new NBTTagString(livingEntity.getType().name()));
+            entityDetails.set("custom name", NBTTagString.a(livingEntity.getCustomName()));
+        entityDetails.set("entity type", NBTTagString.a(livingEntity.getType().name()));
         entityDetails.setBoolean("ai", livingEntity.hasAI());
-        entityDetails.set("health", new NBTTagDouble(livingEntity.getHealth()));
-        entityDetails.set("max health", new NBTTagDouble(livingEntity.getAttribute(Attribute.GENERIC_MAX_HEALTH).getBaseValue()));
+        entityDetails.set("health", NBTTagDouble.a(livingEntity.getHealth()));
+        entityDetails.set("max health", NBTTagDouble.a(livingEntity.getAttribute(Attribute.GENERIC_MAX_HEALTH).getBaseValue()));
         entityDetails.setBoolean("glowing", livingEntity.isGlowing());
 
         NBTTagList potionEffectList = new NBTTagList();
@@ -428,8 +428,8 @@ public class NBTManager {
             for (int i = 0; i < inventoryHolder.getInventory().getContents().length; i++) {
                 ItemStack itemStack = inventoryHolder.getInventory().getContents()[i];
                 if (itemStack != null) {
-                    net.minecraft.server.v1_14_R1.ItemStack nmsStack = CraftItemStack.asNMSCopy(itemStack);
-                    materialList.add(new NBTTagString(itemStack.getType().name() + "." + i));
+                    net.minecraft.server.v1_15_R1.ItemStack nmsStack = CraftItemStack.asNMSCopy(itemStack);
+                    materialList.add(NBTTagString.a(itemStack.getType().name() + "." + i));
                     if (nmsStack.hasTag())
                         tagList.add(nmsStack.getTag());
                     else
@@ -466,7 +466,7 @@ public class NBTManager {
             if (isTamed) {
                 // Tamed wolf data
                 String color = wolf.getCollarColor().name();
-                entityDetails.set("color", new NBTTagString(color));
+                entityDetails.set("color", NBTTagString.a(color));
             }
         } else if (livingEntity instanceof Fox) {
             Fox fox = (Fox) livingEntity;
@@ -476,7 +476,7 @@ public class NBTManager {
             boolean sheared = sheep.isSheared();
             String color = sheep.getColor().name();
 
-            entityDetails.set("color", new NBTTagString(color));
+            entityDetails.set("color", NBTTagString.a(color));
             entityDetails.setBoolean("sheared", sheared);
         } else if (livingEntity instanceof Pig) {
             Pig pig = (Pig) livingEntity;
@@ -509,9 +509,9 @@ public class NBTManager {
                 // Store the tags
                 NBTTagList itemStackTags = new NBTTagList();
                 for (ItemStack itemStack : ingredients) {
-                    materialsAndAmount.add(new NBTTagString(itemStack.getType().name() + "." + itemStack.getAmount()));
+                    materialsAndAmount.add(NBTTagString.a(itemStack.getType().name() + "." + itemStack.getAmount()));
 
-                    net.minecraft.server.v1_14_R1.ItemStack nmsStack = CraftItemStack.asNMSCopy(itemStack);
+                    net.minecraft.server.v1_15_R1.ItemStack nmsStack = CraftItemStack.asNMSCopy(itemStack);
                     NBTTagCompound itemStackCompound = (nmsStack.hasTag()) ? nmsStack.getTag() : new NBTTagCompound();
                     itemStackTags.add(itemStackCompound);
                 }
@@ -519,7 +519,7 @@ public class NBTManager {
                 int maxUses = recipe.getMaxUses();
                 boolean experienceReward = recipe.hasExperienceReward();
 
-                net.minecraft.server.v1_14_R1.ItemStack nmsStack = CraftItemStack.asNMSCopy(recipe.getResult());
+                net.minecraft.server.v1_15_R1.ItemStack nmsStack = CraftItemStack.asNMSCopy(recipe.getResult());
                 NBTTagCompound resultTags = (nmsStack.hasTag()) ? nmsStack.getTag() : new NBTTagCompound();
 
                 NBTTagCompound recipeCompound = new NBTTagCompound();
