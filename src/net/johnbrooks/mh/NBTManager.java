@@ -7,9 +7,12 @@ import org.bukkit.Material;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.craftbukkit.v1_15_R1.inventory.CraftItemStack;
 import org.bukkit.entity.*;
+import org.bukkit.inventory.HorseInventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.LlamaInventory;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.loot.Lootable;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
@@ -39,6 +42,7 @@ public class NBTManager {
     }
 
     public static LivingEntity spawnEntityFromNBTData(ItemStack spawnItem, Location target) {
+
         if (spawnItem != null) {
             net.minecraft.server.v1_15_R1.ItemStack nmsStack = CraftItemStack.asNMSCopy(spawnItem);
             if (nmsStack.hasTag()) {
@@ -47,12 +51,35 @@ public class NBTManager {
 
                 String entityType = entityDetails.getString("entity type");
 
-                LivingEntity livingEntity = (LivingEntity) target.getWorld().spawnEntity(target.clone().add(0, 1f, 0), EntityType.valueOf(entityType));
-                applyNBTDataToEntity(livingEntity, entityDetails);
+                try {
+                    LivingEntity livingEntity = (LivingEntity) target.getWorld().spawnEntity(target.clone().add(0, 0.5f, 0), EntityType.valueOf(entityType));
+                    applyNBTDataToEntity(livingEntity, entityDetails);
 
-                return livingEntity;
-            } else
+                    return livingEntity;
+                } catch (Exception ex) {
+                    Main.logger.warning("Spawn entity type not found.");
+                    String nombre=null;
+                    if (spawnItem.getType() == Material.MOOSHROOM_SPAWN_EGG) {
+                        nombre = "MUSHROOM_COW";
+                    } else {
+                        String[] S = spawnItem.getType().name().split("_");
+                        nombre = S[0];
+                        for (int x = 1; x < S.length - 2; x++) nombre += "_" + S[x];
+                    }
+                    return (LivingEntity) target.getWorld().spawnEntity(target.clone().add(0, 0.5f, 0), EntityType.valueOf(nombre));
+                }
+            } else {
                 Main.logger.warning("Spawn Item does not have any NBT Tags.");
+                String nombre = null;
+                if (spawnItem.getType() == Material.MOOSHROOM_SPAWN_EGG) {
+                    nombre = "MUSHROOM_COW";
+                } else {
+                    String[] S = spawnItem.getType().name().split("_");
+                    nombre = S[0];
+                    for (int x = 1; x < S.length - 2; x++) nombre += "_" + S[x];
+                }
+                return (LivingEntity) target.getWorld().spawnEntity(target.clone().add(0, 0.5f, 0), EntityType.valueOf(nombre));
+            }
         } else
             Main.logger.warning("NULL spawn item passed to #spawnEntityFromNBTData().");
 
@@ -145,14 +172,48 @@ public class NBTManager {
             abstractHorse.setJumpStrength(entityDetails.getDouble("jump strength"));
             abstractHorse.setTamed(entityDetails.getBoolean("tamed"));
             abstractHorse.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).setBaseValue(entityDetails.getDouble("speed"));
+            abstractHorse.setDomestication(entityDetails.getInt("domestication"));
+            abstractHorse.setMaxDomestication(entityDetails.getInt("max domestication"));
+//            NBTTagList saddle = entityDetails.getList("saddle", ListType.COMPOUND.ordinal());
+//            NBTTagCompound recipe = saddle.getCompound(0);
+//
+//            String[] ingredient = recipe.getString(0).split("\\.");
+//            NBTTagCompound tags = tagList.getCompound(0);
+//            ItemStack itemStack = new ItemStack(Material.valueOf(ingredient[0]), Integer.parseInt(ingredient[1]));
+//            net.minecraft.server.v1_14_R1.ItemStack nmsIngredientStack = CraftItemStack.asNMSCopy(itemStack);
+//            nmsIngredientStack.setTag(tags);
+//            itemStack = CraftItemStack.asBukkitCopy(nmsIngredientStack);
+//
+//            entityDetails.set("saddle", itemStackTags2);
+//
+//            if (livingEntity instanceof HorseInventory) {
+//                NBTTagList itemStackTags3 = new NBTTagList(); // Store the tags
+//                net.minecraft.server.v1_14_R1.ItemStack nmsStack3 = CraftItemStack.asNMSCopy(((HorseInventory)livingEntity).getArmor());
+//                NBTTagCompound itemStackCompound3 = (nmsStack3.hasTag()) ? nmsStack3.getTag() : new NBTTagCompound();
+//                itemStackTags3.add(itemStackCompound3);
+//                entityDetails.set("armor", itemStackTags3);
+//            } else if (livingEntity instanceof LlamaInventory) {
+//                NBTTagList itemStackTags3 = new NBTTagList(); // Store the tags
+//                net.minecraft.server.v1_14_R1.ItemStack nmsStack3 = CraftItemStack.asNMSCopy(((LlamaInventory)livingEntity).getDecor());
+//                NBTTagCompound itemStackCompound3 = (nmsStack3.hasTag()) ? nmsStack3.getTag() : new NBTTagCompound();
+//                itemStackTags3.add(itemStackCompound3);
+//                entityDetails.set("decor", itemStackTags3);
+//            }
             //TODO: INVENTORY CONTENTS
         } else if (livingEntity instanceof Fox) {
             Fox fox = (Fox) livingEntity;
             fox.setFoxType(Fox.Type.valueOf(entityDetails.getString("fox type")));
-        } else if (livingEntity instanceof Villager) {
+        } else if (livingEntity instanceof AbstractVillager) {
             //1) Get basic villager data.
-            Villager villager = (Villager) livingEntity;
-            villager.setProfession(Villager.Profession.valueOf(entityDetails.getString("profession")));
+            AbstractVillager villager = (AbstractVillager) livingEntity;
+
+            if (livingEntity instanceof Villager) {
+                Villager villager2 = (Villager) livingEntity;
+                villager2.setProfession(Villager.Profession.valueOf(entityDetails.getString("profession")));
+                villager2.setVillagerType(Villager.Type.valueOf(entityDetails.getString("type")));
+                villager2.setVillagerExperience(entityDetails.getInt("exp"));
+                villager2.setVillagerLevel(entityDetails.getInt("level"));
+            }
 
             //2) Grab the recipe list.
             NBTTagList recipeList = entityDetails.getList("recipes", ListType.COMPOUND.ordinal());
@@ -205,14 +266,11 @@ public class NBTManager {
             zombieVillager.setVillagerProfession(Villager.Profession.valueOf(entityDetails.getString("profession")));
         } else if (livingEntity instanceof Parrot) {
             ((Parrot) livingEntity).setVariant(Parrot.Variant.valueOf(entityDetails.getString("variant")));
-        } else if (livingEntity instanceof Llama) {
-            Integer strength = entityDetails.getInt("strength");
-            Llama.Color color = Llama.Color.valueOf(entityDetails.getString("color"));
+        }
 
-
-            Llama llama = (Llama) livingEntity;
-            llama.setStrength(strength);
-            llama.setColor(color);
+        if (livingEntity instanceof Lootable) {
+            Lootable lootable = (Lootable) livingEntity;
+            lootable.setSeed(entityDetails.getLong("seed"));
         }
 
         if (livingEntity instanceof InventoryHolder) {
@@ -268,7 +326,7 @@ public class NBTManager {
             entityName = livingEntity.getCustomName();
 
         final ItemMeta itemMeta = itemStack.getItemMeta();
-        itemMeta.setDisplayName(CaptureEgg.TITLE_PREFIX + entityName);
+        itemMeta.setDisplayName(Language.getKeyWithoutPrefix("capturedMob").replaceAll("%entity%", entityName));
         itemMeta.setLore(createItemLore(livingEntity));
         itemStack.setItemMeta(itemMeta);
 
@@ -297,26 +355,26 @@ public class NBTManager {
 
     private static List<String> createItemLore(final LivingEntity livingEntity) {
         final List<String> loreList = new ArrayList<>(2);
-        loreList.add(ChatColor.AQUA + "Creature Type: " + ChatColor.YELLOW + livingEntity.getType().name());
-        loreList.add(ChatColor.AQUA + "Health: " + ChatColor.YELLOW + getLoreHealth(livingEntity));
+        loreList.add(Language.getKeyWithoutPrefix("mobType") + livingEntity.getType().name());
+        loreList.add(Language.getKeyWithoutPrefix("mobHealth") + getLoreHealth(livingEntity));
 
         // Entity Age
         if (livingEntity instanceof Ageable) {
             final Ageable ageable = (Ageable) livingEntity;
             if (!ageable.isAdult())
-                loreList.add(ChatColor.AQUA + "Age: " + ChatColor.YELLOW + "Baby");
+                loreList.add(Language.getKeyWithoutPrefix("mobAge") + Language.getKeyWithoutPrefix("ageBaby"));
         }
 
         // Entity Tamed
         if (livingEntity instanceof Tameable) {
             final Tameable tameable = (Tameable) livingEntity;
-            loreList.add(ChatColor.AQUA + "Tamed: " + ChatColor.YELLOW + (tameable.isTamed() ? "Yes" : "No"));
+            loreList.add(Language.getKeyWithoutPrefix("mobTamed") + (tameable.isTamed() ? Language.getKeyWithoutPrefix("affirmative") : Language.getKeyWithoutPrefix("negative")));
         }
 
         // Parrot Color
         if (livingEntity instanceof Parrot) {
             final Parrot parrot = (Parrot) livingEntity;
-            loreList.add(ChatColor.AQUA + "Color: " + ChatColor.YELLOW + parrot.getVariant().name());
+            loreList.add(Language.getKeyWithoutPrefix("mobColor") + parrot.getVariant().name());
         }
 
         // Active potion effects
@@ -334,28 +392,28 @@ public class NBTManager {
         final NBTTagList loreList = new NBTTagList();
 
         // Entity Type
-        loreList.add(NBTTagString.a(ChatColor.AQUA + "Creature Type: " + ChatColor.YELLOW + livingEntity.getType().name()));
+        loreList.add(NBTTagString.a(Language.getKeyWithoutPrefix("mobType") + livingEntity.getType().name()));
 
         // Entity Health
-        loreList.add(NBTTagString.a(ChatColor.AQUA + "Health: " + ChatColor.YELLOW + getLoreHealth(livingEntity)));
+        loreList.add(NBTTagString.a(Language.getKeyWithoutPrefix("mobHealth") + getLoreHealth(livingEntity)));
 
         // Entity Age
         if (livingEntity instanceof Ageable) {
             final Ageable ageable = (Ageable) livingEntity;
             if (!ageable.isAdult())
-                loreList.add(NBTTagString.a(ChatColor.AQUA + "Age: " + ChatColor.YELLOW + "Baby"));
+                loreList.add(NBTTagString.a(Language.getKeyWithoutPrefix("mobAge") + Language.getKeyWithoutPrefix("ageBaby")));
         }
 
         // Entity Tamed
         if (livingEntity instanceof Tameable) {
             final Tameable tameable = (Tameable) livingEntity;
-            loreList.add(NBTTagString.a(ChatColor.AQUA + "Tamed: " + ChatColor.YELLOW + (tameable.isTamed() ? "Yes" : "No")));
+            loreList.add(NBTTagString.a(Language.getKeyWithoutPrefix("mobTamed") + (tameable.isTamed() ? Language.getKeyWithoutPrefix("affirmative") : Language.getKeyWithoutPrefix("negative"))));
         }
 
         // Parrot Color
         if (livingEntity instanceof Parrot) {
             final Parrot parrot = (Parrot) livingEntity;
-            loreList.add(NBTTagString.a(ChatColor.AQUA + "Color: " + ChatColor.YELLOW + parrot.getVariant().name()));
+            loreList.add(NBTTagString.a(Language.getKeyWithoutPrefix("mobColor") + parrot.getVariant().name()));
         }
 
         // Active potion effects
@@ -496,10 +554,59 @@ public class NBTManager {
 
             entityDetails.setDouble("jump strength", jumpStrength);
             entityDetails.setDouble("speed", speed);
+            entityDetails.setInt("domestication", abstractHorse.getDomestication());
+            entityDetails.setInt("max domestication", abstractHorse.getMaxDomestication());
 
-        } else if (livingEntity instanceof Villager) {
-            Villager villager = (Villager) livingEntity;
-            String profession = villager.getProfession().name();
+            if (livingEntity instanceof ChestedHorse) entityDetails.setBoolean("chest equipped", ((ChestedHorse) abstractHorse).isCarryingChest());
+
+//            NBTTagList recipeList = new NBTTagList();
+//            NBTTagList materialsAndAmount = new NBTTagList(); // Holds materials and amount separated by "."
+//            NBTTagList itemStackTags = new NBTTagList(); // Store the tags
+//
+//            for (ItemStack itemStack : abstractHorse.getInventory()) {
+//                // Store the materials and amounts
+//                materialsAndAmount.add(new NBTTagString(itemStack.getType().name() + "." + itemStack.getAmount()));
+//
+//                net.minecraft.server.v1_14_R1.ItemStack nmsStack = CraftItemStack.asNMSCopy(itemStack);
+//                NBTTagCompound itemStackCompound = (nmsStack.hasTag()) ? nmsStack.getTag() : new NBTTagCompound();
+//                itemStackTags.add(itemStackCompound);
+//            }
+//
+//            NBTTagCompound recipeCompound = new NBTTagCompound();
+//            recipeCompound.set("materials", materialsAndAmount);
+//            recipeCompound.set("tags", itemStackTags);
+//            recipeList.add(recipeCompound);
+//            entityDetails.set("recipes", recipeList);
+
+            NBTTagList itemStackTags2 = new NBTTagList(); // Store the tags
+            net.minecraft.server.v1_15_R1.ItemStack nmsStack2 = CraftItemStack.asNMSCopy(abstractHorse.getInventory().getSaddle());
+            NBTTagCompound itemStackCompound2 = (nmsStack2.hasTag()) ? nmsStack2.getTag() : new NBTTagCompound();
+            itemStackTags2.add(itemStackCompound2);
+            entityDetails.set("saddle", itemStackTags2);
+
+            if (livingEntity instanceof HorseInventory) {
+                NBTTagList itemStackTags3 = new NBTTagList(); // Store the tags
+                net.minecraft.server.v1_15_R1.ItemStack nmsStack3 = CraftItemStack.asNMSCopy(((HorseInventory)livingEntity).getArmor());
+                NBTTagCompound itemStackCompound3 = (nmsStack3.hasTag()) ? nmsStack3.getTag() : new NBTTagCompound();
+                itemStackTags3.add(itemStackCompound3);
+                entityDetails.set("armor", itemStackTags3);
+            } else if (livingEntity instanceof LlamaInventory) {
+                NBTTagList itemStackTags3 = new NBTTagList(); // Store the tags
+                net.minecraft.server.v1_15_R1.ItemStack nmsStack3 = CraftItemStack.asNMSCopy(((LlamaInventory)livingEntity).getDecor());
+                NBTTagCompound itemStackCompound3 = (nmsStack3.hasTag()) ? nmsStack3.getTag() : new NBTTagCompound();
+                itemStackTags3.add(itemStackCompound3);
+                entityDetails.set("decor", itemStackTags3);
+            }
+        } else if (livingEntity instanceof AbstractVillager) {
+            AbstractVillager villager = (AbstractVillager) livingEntity;
+
+            if (livingEntity instanceof Villager) {
+                Villager villager2 = (Villager) livingEntity;
+                entityDetails.setString("profession", villager2.getProfession().name());
+                entityDetails.setString("type", villager2.getVillagerType().name());
+                entityDetails.setInt("exp", villager2.getVillagerExperience());
+                entityDetails.setInt("level", villager2.getVillagerLevel());
+            }
 
             NBTTagList recipeList = new NBTTagList();
             for (org.bukkit.inventory.MerchantRecipe recipe : villager.getRecipes()) {
@@ -534,7 +641,6 @@ public class NBTManager {
                 recipeList.add(recipeCompound);
             }
 
-            entityDetails.setString("profession", profession);
             entityDetails.set("recipes", recipeList);
         } else if (livingEntity instanceof Creeper) {
             Creeper creeper = (Creeper) livingEntity;
@@ -550,6 +656,11 @@ public class NBTManager {
             Parrot parrot = (Parrot) livingEntity;
             Parrot.Variant color = parrot.getVariant();
             entityDetails.setString("variant", color.name());
+        }
+
+        if (livingEntity instanceof Lootable) {
+            Lootable lootTable = (Lootable) livingEntity;
+            entityDetails.setLong("seed", lootTable.getSeed());
         }
 
         if (livingEntity instanceof Tameable) {

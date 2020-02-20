@@ -1,11 +1,9 @@
 name: MobCapture
 version: 1.3.3
-author: WiseHollow
 main: net.johnbrooks.mh.Main
 api-version: '1.15'
-
-softdepend: [ Vault, GriefPrevention, Towny ]
-
+authors: [WiseHollow, mjl1010]
+softdepend: [Vault, GriefPrevention, Towny, Residence]
 permissions:
   MobCapture.Admin:
     description: Performs administrative tasks regarding MobCapture.
@@ -22,9 +20,13 @@ permissions:
   MobCapture.NoCost:
     description: Capture creatures without a cost.
     default: op
-
 commands:
   MobCapture:
+    description: Performs administrative tasks regarding MobCapture.
+    usage: /<command> reload|update|version|spawn
+    permission: MobCapture.admin
+    permission-message: You don't have <permission>
+  capturar:
     description: Performs administrative tasks regarding MobCapture.
     usage: /<command> reload|update|version|spawn
     permission: MobCapture.admin

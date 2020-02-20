@@ -1,5 +1,6 @@
 package net.johnbrooks.mh;
 
+import com.bekvon.bukkit.residence.Residence;
 import me.ryanhamshire.GriefPrevention.GriefPrevention;
 import net.johnbrooks.mh.items.UniqueProjectileData;
 import net.milkbowl.vault.economy.Economy;
@@ -11,10 +12,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Settings {
-    public enum CostMode { NONE, VAULT, ITEM }
+    public enum CostMode { NONE, VAULT, ITEM, ALL }
 
     public static CostMode costMode = CostMode.ITEM;
-
+    public static boolean catchEffect = true;
+    public static int timeRelease = 60;
     public static Material projectileCatcherMaterial = Material.SNOWBALL;
 
     public static Material costMaterial = Material.REDSTONE;
@@ -27,6 +29,9 @@ public class Settings {
 
     public static boolean townyHook = false;
     public static boolean griefPreventionHook = false;
+    public static boolean residenceHook = false;
+    public static boolean residenceAllowed = false;
+    public static List<String> residenceFlags = new ArrayList<>();
     public static boolean meleeCapture = true;
 
     public static void load() {
@@ -42,6 +47,9 @@ public class Settings {
                     "SpigotMC page to get Material names.");
         }
 
+        catchEffect = config.getBoolean("Catch Effect");
+        timeRelease = config.getInt("Release Time");
+
         try
         {
             costMode = CostMode.valueOf(config.getString("Cost Mode"));
@@ -50,7 +58,7 @@ public class Settings {
         }
 
         // 3) If vault is set, hook into vault.
-        if (costMode == CostMode.VAULT) {
+        if (costMode == CostMode.VAULT || costMode == CostMode.ALL) {
             Main.logger.info("Vault hook " + (setupEconomy() ? "was successful!" : "has failed!"));
             if (Main.economy == null)
             {
@@ -68,6 +76,9 @@ public class Settings {
         coloredEggs = config.getBoolean("Colored Eggs");
         townyHook = config.getBoolean("Towny Hook");
         griefPreventionHook = config.getBoolean("GriefPrevention Hook");
+        residenceHook = config.getBoolean("Residence Hook");
+        residenceFlags = config.getStringList("Residence Allow Default");
+        residenceAllowed = config.getBoolean("Residence Allow Flags");
         meleeCapture = config.getBoolean("MeleeCapture");
 
         if (townyHook) {
@@ -76,6 +87,12 @@ public class Settings {
         if (griefPreventionHook) {
             Main.griefPrevention = GriefPrevention.instance;
             Main.logger.info("GriefPrevention hook " + (Main.griefPrevention != null
+                    ? "was successful!" : "has failed!"));
+        }
+
+        if (residenceHook) {
+            Main.residence = Residence.getInstance();
+            Main.logger.info("Residence hook " + (Main.residence != null
                     ? "was successful!" : "has failed!"));
         }
 

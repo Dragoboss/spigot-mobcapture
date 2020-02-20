@@ -126,6 +126,10 @@ public class EventManager implements Listener {
                     ((Projectile) event.getDamager()).getShooter() instanceof Player) {
                 player = (Player) ((Projectile) event.getDamager()).getShooter();
             } else if (Settings.meleeCapture && event.getDamager() instanceof Player
+<<<<<<< HEAD
+=======
+                    && ((Player) event.getDamager()).getInventory().getItemInMainHand().getType() != null
+>>>>>>> upstream1_-_mjl1010/1.14_update
                     && ((Player) event.getDamager()).getInventory().getItemInMainHand().getType() != Material.AIR
                     && ((Player) event.getDamager()).getInventory().getItemInMainHand().getType() == Settings.projectileCatcherMaterial) {
                 player = ((Player) event.getDamager());
@@ -142,30 +146,54 @@ public class EventManager implements Listener {
 
     private boolean attemptCapture(Player catcher, LivingEntity target) {
         if (!Main.permissionManager.hasPermissionToCapture(catcher, target)) {
-            catcher.sendMessage(Language.PREFIX + "You do not have permission to capture this creature.");
+            catcher.sendMessage(Language.getKey("errorCapturePermissions"));
             return false;
         }
 
         if (Settings.griefPreventionHook &&
                 Main.griefPrevention.claimsEnabledForWorld(target.getWorld()) &&
                 Main.griefPrevention.allowBuild(catcher, target.getLocation()) != null) {
-            catcher.sendMessage(Language.PREFIX + "You do not have permission to capture creatures here.");
+            catcher.sendMessage(Language.getKey("errorCaptureAllowPermissions"));
             return false;
+        }
+
+        if (Settings.residenceHook && !Main.residence.isResAdminOn(catcher) &&
+                Main.residence.getResidenceManager().getByLoc(target.getLocation()) != null) {
+
+            for (String s : Settings.residenceFlags) {
+                // checks the target is an AnimalType and catcher has allowed in res
+                // TODO Better
+                if (target instanceof Animals && s.contains("animal") && !Main.residence.getResidenceManager().getByLoc(target.getLocation()).getPermissions().playerHas(catcher.getName(), s, Settings.residenceAllowed)) {
+                    catcher.sendMessage(Language.getKey("errorCaptureAllowPermissions"));
+                    return false;
+                } else if (target instanceof Monster && (s.contains("mob") || s.contains("monster")) && !Main.residence.getResidenceManager().getByLoc(target.getLocation()).getPermissions().playerHas(catcher.getName(), s, Settings.residenceAllowed)) {
+                    catcher.sendMessage(Language.getKey("errorCaptureAllowPermissions"));
+                    return false;
+                } else if (!Main.residence.getResidenceManager().getByLoc(target.getLocation()).getPermissions().playerHas(catcher.getName(), s, Settings.residenceAllowed)) {
+                    catcher.sendMessage(Language.getKey("errorCaptureAllowPermissions"));
+                    return false;
+                }
+            }
         }
 
         //4) Check if this is a disabled world.
         if (Settings.isDisabledWorld(catcher.getWorld().getName())) {
-            catcher.sendMessage(Language.PREFIX + "You cannot capture a creature in this world!");
+            catcher.sendMessage(Language.getKey("errorCaptureWorldPermissions"));
             return false;
         }
 
         //5) Check if they have enough money/items.
         if (!catcher.hasPermission(Main.permissionManager.NoCost) && Settings.costMode != Settings.CostMode.NONE) {
             if (!EconomyManager.chargePlayer(catcher)) {
-                catcher.sendMessage(Language.PREFIX + "You do not have enough " +
-                        (Settings.costMode == Settings.CostMode.ITEM ?
-                                Settings.costMaterial.name() :
-                                "money (" + Settings.costVault + " required)."));
+                switch (Settings.costMode) {
+                    case ITEM:
+                        catcher.sendMessage(Language.getKey("notEnoughItem").replaceAll("%item%", Settings.costMaterial.name()).replaceAll("%costItem%", String.valueOf(Settings.costAmount)));
+                    case VAULT:
+                        catcher.sendMessage(Language.getKey("notEnoughMoney").replaceAll("%costVault%", String.valueOf(Settings.costVault)));
+                    case ALL:
+                        catcher.sendMessage(Language.getKey("notEnoughItem").replaceAll("%item%", Settings.costMaterial.name()).replaceAll("%costItem%", String.valueOf(Settings.costAmount)));
+                        catcher.sendMessage(Language.getKey("notEnoughMoney").replaceAll("%costVault%", String.valueOf(Settings.costVault)));
+                }
                 return false;
             }
         }
@@ -185,7 +213,11 @@ public class EventManager implements Listener {
 
     @EventHandler
     public void preventUseEggOnOtherEntity(PlayerInteractEntityEvent event) {
+<<<<<<< HEAD
         if (event.getPlayer().getInventory().getItemInMainHand().getType() != Material.AIR && event.getHand() == EquipmentSlot.HAND
+=======
+        if (event.getPlayer().getInventory().getItemInMainHand() != null && event.getPlayer().getInventory().getItemInMainHand().getType() != Material.AIR && event.getHand() == EquipmentSlot.HAND
+>>>>>>> upstream1_-_mjl1010/1.14_update
                 && NBTManager.isSpawnEgg(event.getPlayer().getInventory().getItemInMainHand())) {
             event.setCancelled(true);
         }
@@ -193,11 +225,16 @@ public class EventManager implements Listener {
 
     @EventHandler
     public void useSpawnEgg(PlayerInteractEvent event) {
+<<<<<<< HEAD
         if (event.getPlayer().getInventory().getItemInMainHand().getType() != Material.AIR &&
+=======
+        if (event.getPlayer().getInventory().getItemInMainHand() != null && event.getPlayer().getInventory().getItemInMainHand().getType() != Material.AIR &&
+>>>>>>> upstream1_-_mjl1010/1.14_update
                 event.getHand() == EquipmentSlot.HAND) {
 
             if (NBTManager.isSpawnEgg(event.getPlayer().getInventory().getItemInMainHand())) {
                 if (Settings.isDisabledWorld(event.getPlayer().getWorld().getName()) || event.useItemInHand() == Event.Result.DENY) {
+<<<<<<< HEAD
                     event.getPlayer().sendMessage(Language.PREFIX + "You cannot release a creature in this world!");
                     return;
                 }
@@ -207,6 +244,20 @@ public class EventManager implements Listener {
 
                     if (event.getBlockFace() != BlockFace.UP) {
                         // Make a friendly location to spawn the entity.
+=======
+                    event.getPlayer().sendMessage(Language.getKey("errorUseWorldPermissions"));
+                    return;
+                }
+
+                // && !event.isCancelled()
+                if (event.getClickedBlock() != null && (event.getAction() == Action.RIGHT_CLICK_BLOCK || event.getClickedBlock().getType() == Material.WATER)) {
+                    Location target = event.getClickedBlock().getLocation().clone().add(0.5, 0.5, 0.5);
+
+                    if (event.getBlockFace() != BlockFace.UP) {
+                        // Make a friendly location to spawn the entity.
+                        // Vector direction = event.getPlayer().getLocation().toVector().subtract(target.toVector());
+                        // direction = direction.normalize();
+>>>>>>> upstream1_-_mjl1010/1.14_update
                         final Vector direction = event.getPlayer().getLocation().toVector().subtract(target.toVector()).normalize();
                         target = target.add(direction.multiply(2));
                     }
@@ -219,7 +270,7 @@ public class EventManager implements Listener {
                         // 1) Spawn creature at target location and cancel event.
                         LivingEntity spawnedEntity = CaptureEgg.useSpawnItem(event.getPlayer().getInventory().getItemInMainHand(), target);
                         event.setCancelled(true);
-                        event.getPlayer().sendMessage(ChatColor.YELLOW + Main.plugin.getName() + ": " + ChatColor.BLUE + spawnedEntity.getType().name() + " successfully spawned!");
+                        //event.getPlayer().sendMessage(ChatColor.YELLOW + Main.plugin.getName() + ": " + ChatColor.BLUE + spawnedEntity.getType().name() + " successfully spawned!");
 
                         // 2) Remove itemstack from user, or reduce amount by 1.
                         if (event.getPlayer().getGameMode() != GameMode.CREATIVE) {
@@ -256,7 +307,7 @@ public class EventManager implements Listener {
                             CaptureEgg.useSpawnItem(item.getItemStack(), fixedLocation);
                             item.remove();
                         }
-                    }, 60);
+                    }, Settings.timeRelease * 20L);
 
                     // 4) Remove itemstack from user, or reduce amount by 1.
                     if (event.getPlayer().getGameMode() != GameMode.CREATIVE) {

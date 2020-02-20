@@ -25,7 +25,7 @@ public class TownyCaptureEvents implements Listener {
                 if (optionalTown.isPresent()) {
                     Town town = optionalTown.get();
                     if (!town.hasResident(event.getCaptor().getName())) {
-                        event.getCaptor().sendMessage(Language.PREFIX + "You do not have permission to capture creatures here.");
+                        event.getCaptor().sendMessage(Language.getKey("errorCaptureAllowPermissions"));
                         event.setCancelled(true);
                     }
                 }
